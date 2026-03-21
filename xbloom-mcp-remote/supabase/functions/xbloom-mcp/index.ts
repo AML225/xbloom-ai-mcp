@@ -474,12 +474,21 @@ async function handleToolCall(params: Record<string, unknown>, accessToken: stri
   const args = (params.arguments as Record<string, unknown>) || {};
 
   try {
-    if (name === "xbloom_login") {
-      return { content: [{ type: "text", text: await loginXbloom(args, accessToken) }] };
-    }
-
+    // Fetch recipe doesn't require auth
     if (name === "xbloom_fetch_recipe") {
       return { content: [{ type: "text", text: await fetchRecipe(args) }] };
+    }
+
+    // All other tools require a valid bearer token
+    if (!accessToken) {
+      return {
+        content: [{ type: "text", text: "Authentication required. Please reconnect the integration." }],
+        isError: true,
+      };
+    }
+
+    if (name === "xbloom_login") {
+      return { content: [{ type: "text", text: await loginXbloom(args, accessToken) }] };
     }
 
     const creds = await getSession(accessToken);
