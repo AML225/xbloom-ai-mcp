@@ -656,6 +656,11 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: CORS_HEADERS });
   }
 
+  // Handle DELETE for SSE session cleanup
+  if (req.method === "DELETE") {
+    return new Response(null, { status: 200, headers: CORS_HEADERS });
+  }
+
   // OAuth discovery
   if (req.method === "GET" && (path.endsWith("/.well-known/oauth-protected-resource") || path.includes("oauth-protected-resource"))) {
     return jsonResponse({ resource: BASE_URL, authorization_servers: [BASE_URL], bearer_methods_supported: ["header"] });
