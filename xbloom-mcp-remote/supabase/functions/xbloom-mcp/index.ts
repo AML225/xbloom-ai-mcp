@@ -609,9 +609,11 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-function getBearerToken(req: Request): string | null {
+function getSessionKey(req: Request): string {
+  // Prefer bearer token (OAuth), fall back to Mcp-Session-Id (authless)
   const auth = req.headers.get("authorization") || "";
-  return auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  if (auth.startsWith("Bearer ")) return auth.slice(7);
+  return req.headers.get("mcp-session-id") || "";
 }
 
 // --- SSE transport ---
@@ -691,7 +693,7 @@ Deno.serve(async (req: Request) => {
   // --- SSE transport ---
   // GET /sse — open SSE stream, send endpoint URL
   if (req.method === "GET" && path.endsWith("/sse")) {
-    const accessToken = getBearerToken(req) || "";
+    const accessToken = getSessionKey(req) || "";
     const sessionId = generateToken();
 
     const stream = new ReadableStream({
@@ -760,14 +762,23 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   // MCP JSON-RPC over POST
-  const accessToken = getBearerToken(req);
+  let sessionKey = getSessionKey(req);
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return jsonRpcErr(null, -32700, "Parse error"); }
 
-  const response = await handleMcpMessage(body, accessToken || "");
-  if (!response) return new Response(null, { status: 204 });
-  return new Response(JSON.stringify(response), {
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
+  // On initialize, generate a session ID if client doesn't have one
+  const method = body.method as string;
+  if (method === "initialize" && !sessionKey) {
+    sessionKey = generateToken();
+  }
+
+  const response = await handleMcpMessage(body, sessionKey);
+  if (!response) return new Response(null, { status: 204, headers: CORS_HEADERS });
+
+  const headers: Record<string, string> = { "Content-Type": "application/json", ...CORS_HEADERS };
+  if (method === "initialize" && sessionKey) {
+    headers["Mcp-Session-Id"] = sessionKey;
+  }
+  return new Response(JSON.stringify(response), { headers });
 });
