@@ -188,7 +188,7 @@ const TOOLS = [
   },
   {
     name: "xbloom_create_recipe",
-    description: "Push a new recipe to your XBloom account. Appears in the xBloom iOS app.",
+    description: "Push a new coffee recipe to your XBloom account. Appears in the xBloom iOS app. For tea, use xbloom_create_tea_recipe instead.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -216,6 +216,33 @@ const TOOLS = [
         color: { type: "string", description: "Hex color (default: #C9D5B8)" },
       },
       required: ["name", "dose_g", "ratio", "grind_size", "grind_rpm", "pours"],
+    },
+  },
+  {
+    name: "xbloom_create_tea_recipe",
+    description: "Push a new tea recipe to your XBloom account for the Omni Tea Brewer. Uses tea-specific settings (no grinding, longer steep times, lower doses). Max 3 steeps, max 90ml per steep, max 10g dose, steep up to 360 seconds.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "Tea recipe name" },
+        dose_g: { type: "number", description: "Tea dose in grams (1-10)" },
+        ratio: { type: "number", description: "Water ratio (total = dose_g * ratio)" },
+        steeps: {
+          type: "array",
+          description: "Steep steps (max 3)",
+          items: {
+            type: "object",
+            properties: {
+              volume_ml: { type: "number", description: "Water volume per steep (max 90ml)" },
+              temperature_c: { type: "number", description: "Water temperature. Green: 70-80, White: 75-85, Oolong: 85-95, Black: 90-100, Herbal: 100" },
+              steep_seconds: { type: "integer", description: "Steep time in seconds (0-360)" },
+              flow_rate: { type: "number", description: "Water flow rate (default 3.0)" },
+            },
+          },
+        },
+        color: { type: "string", description: "Hex color (default: #A8C686)" },
+      },
+      required: ["name", "dose_g", "ratio", "steeps"],
     },
   },
   {
@@ -374,6 +401,47 @@ async function createRecipe(args: Record<string, unknown>, creds: UserCredential
   return `Failed. Your session may have expired — try logging in again.`;
 }
 
+async function createTeaRecipe(args: Record<string, unknown>, creds: UserCredentials): Promise<string> {
+  const steeps = (args.steeps as Array<Record<string, unknown>>) || [];
+  const pourList = steeps.map((s, i) => ({
+    theName: i === 0 ? "Steep 1" : `Steep ${i + 1}`,
+    volume: Math.min(Number(s.volume_ml ?? 80), 90),
+    temperature: Number(s.temperature_c ?? 85),
+    flowRate: Number(s.flow_rate ?? 3.0),
+    pattern: 2, // circular
+    pausing: Math.min(Number(s.steep_seconds ?? 120), 360),
+    isEnableVibrationBefore: 2,
+    isEnableVibrationAfter: 2,
+  }));
+  const payload = {
+    ...authBase(creds),
+    theName: args.name,
+    dose: Math.min(Number(args.dose_g), 10),
+    grandWater: Number(args.ratio),
+    grinderSize: 50,
+    rpm: 60,
+    cupType: 4,
+    adaptedModel: 1,
+    isEnableBypassWater: 2,
+    isSetGrinderSize: 2,
+    theColor: (args.color as string) || "#A8C686",
+    theSubsetId: 0,
+    bypassTemp: 85.0,
+    bypassVolume: 5.0,
+    subSetType: 2,
+    appPlace: [4],
+    createTimeStamp: Date.now(),
+    isShortcuts: 2,
+    pourDataJSONStr: JSON.stringify(pourList),
+  };
+  const resp = await postEncrypted("tuRecipeAdd.tuhtml", payload);
+  if (resp.result === "success") {
+    const shareId = btoa(String(resp.tableId));
+    return `Tea recipe '${args.name}' created!\nShare: ${SHARE_BASE}/?id=${encodeURIComponent(shareId)}`;
+  }
+  return `Failed. Your session may have expired — try logging in again.`;
+}
+
 async function editRecipe(args: Record<string, unknown>, creds: UserCredentials): Promise<string> {
   const recipeId = args.recipe_id as number;
   const listPayload = { ...authBase(creds), pageNumber: 1, countPerPage: 100, adaptedModel: 1 };
@@ -503,6 +571,7 @@ async function handleToolCall(params: Record<string, unknown>, accessToken: stri
     switch (name) {
       case "xbloom_list_recipes": result = await listRecipes(creds); break;
       case "xbloom_create_recipe": result = await createRecipe(args, creds); break;
+      case "xbloom_create_tea_recipe": result = await createTeaRecipe(args, creds); break;
       case "xbloom_edit_recipe": result = await editRecipe(args, creds); break;
       case "xbloom_delete_recipe": result = await deleteRecipe(args, creds); break;
       default: return { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true };
