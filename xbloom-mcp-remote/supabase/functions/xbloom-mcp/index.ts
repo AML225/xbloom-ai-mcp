@@ -408,7 +408,7 @@ async function createTeaRecipe(args: Record<string, unknown>, creds: UserCredent
     volume: Math.min(Number(s.volume_ml ?? 80), 90),
     temperature: Number(s.temperature_c ?? 85),
     flowRate: Number(s.flow_rate ?? 3.0),
-    pattern: 2, // circular
+    pattern: 3, // circular
     pausing: Math.min(Number(s.steep_seconds ?? 120), 360),
     isEnableVibrationBefore: 2,
     isEnableVibrationAfter: 2,
