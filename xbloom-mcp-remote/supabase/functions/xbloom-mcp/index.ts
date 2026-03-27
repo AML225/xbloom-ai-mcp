@@ -303,8 +303,8 @@ const TOOLS = [
 
 // --- Tool implementations ---
 
-const PATTERN_MAP: Record<string, number> = { centered: 1, circular: 2, spiral: 3 };
-const PATTERN_REV: Record<number, string> = { 1: "centered", 2: "circular", 3: "spiral" };
+const PATTERN_MAP: Record<string, number> = { centered: 1, spiral: 2, circular: 3 };
+const PATTERN_REV: Record<number, string> = { 1: "centered", 2: "spiral", 3: "circular" };
 
 interface Pour {
   volume_ml?: number;
