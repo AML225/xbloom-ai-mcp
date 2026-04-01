@@ -5,6 +5,7 @@ WORKDIR /app
 
 # Copy source
 COPY xbloom-mcp-server/index.ts .
+COPY xbloom-mcp-server/oauth.ts .
 
 # Pre-cache dependencies
 RUN deno cache index.ts
