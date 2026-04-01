@@ -585,6 +585,8 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   const path = url.pathname;
 
+  const authHeader = req.headers.get("authorization") || "none";
+  console.log(`${req.method} ${path} auth=${authHeader.slice(0, 20)}`);
   console.log(`${req.method} ${path} ${req.headers.get("content-type") || ""}`);
 
   if (req.method === "OPTIONS") {
