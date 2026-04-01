@@ -4,7 +4,7 @@
 
 import { Buffer } from "node:buffer";
 import { publicEncrypt, constants } from "node:crypto";
-import { handleAuthorize, handleToken, handleRegister, oauthDiscoveryResource, oauthDiscoveryServer } from "./oauth.ts";
+// import { handleAuthorize, handleToken, handleRegister, oauthDiscoveryResource, oauthDiscoveryServer } from "./oauth.ts";
 
 // --- XBloom API constants ---
 
@@ -604,22 +604,22 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: CORS_HEADERS });
   }
 
-  // OAuth discovery
-  if (req.method === "GET" && (path.endsWith("/.well-known/oauth-protected-resource") || path.includes("oauth-protected-resource"))) {
-    return jsonResponse(oauthDiscoveryResource());
-  }
-  if (req.method === "GET" && (path.endsWith("/.well-known/oauth-authorization-server") || path.includes("oauth-authorization-server"))) {
-    return jsonResponse(oauthDiscoveryServer());
-  }
+  // // OAuth discovery
+  // if (req.method === "GET" && (path.endsWith("/.well-known/oauth-protected-resource") || path.includes("oauth-protected-resource"))) {
+  //   return jsonResponse(oauthDiscoveryResource());
+  // }
+  // if (req.method === "GET" && (path.endsWith("/.well-known/oauth-authorization-server") || path.includes("oauth-authorization-server"))) {
+  //   return jsonResponse(oauthDiscoveryServer());
+  // }
 
-  // OAuth endpoints
-  if (req.method === "GET" && path.endsWith("/authorize")) return handleAuthorize(url);
-  if (req.method === "POST" && path.endsWith("/token")) return handleToken(req);
-  if (req.method === "POST" && path.endsWith("/register")) {
-    let body: Record<string, unknown> = {};
-    try { body = await req.json(); } catch { /* ok */ }
-    return handleRegister(body);
-  }
+  // // OAuth endpoints
+  // if (req.method === "GET" && path.endsWith("/authorize")) return handleAuthorize(url);
+  // if (req.method === "POST" && path.endsWith("/token")) return handleToken(req);
+  // if (req.method === "POST" && path.endsWith("/register")) {
+  //   let body: Record<string, unknown> = {};
+  //   try { body = await req.json(); } catch { /* ok */ }
+  //   return handleRegister(body);
+  // }
 
   // --- SSE transport ---
   // GET /sse — open SSE stream, send endpoint URL
