@@ -1,11 +1,9 @@
-// XBloom MCP Server — Supabase Edge Function
-// Remote MCP server for Claude mobile/web/desktop
-// Multi-user: each user logs in with their own XBloom account via xbloom_login tool
-// Credentials (NOT passwords) are AES-encrypted and stored in Supabase DB with RLS
+// XBloom MCP Server
+// Self-hosted MCP server for Claude desktop/web/mobile
+// Single-user: credentials are read from XBLOOM_EMAIL and XBLOOM_PASSWORD environment variables
 
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { Buffer } from "node:buffer";
-import { publicEncrypt, constants, createCipheriv, createDecipheriv, randomBytes, createHmac } from "node:crypto";
+import { publicEncrypt, constants } from "node:crypto";
 
 // --- XBloom API constants ---
 
@@ -27,16 +25,12 @@ const API_HEADERS: Record<string, string> = {
   "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
 };
 
-// --- AES encryption for stored credentials ---
+// --- Environment variables ---
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
-const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const XBLOOM_EMAIL = Deno.env.get("XBLOOM_EMAIL") || "";
+const XBLOOM_PASSWORD = Deno.env.get("XBLOOM_PASSWORD") || "";
 
-function getEncryptionKey(): Buffer {
-  const secret = SUPABASE_SERVICE_KEY;
-  if (!secret) throw new Error("SUPABASE_SERVICE_ROLE_KEY is required");
-  return Buffer.from(createHmac("sha256", secret).update("xbloom-mcp-encryption-key").digest());
-}
+let cachedCredentials: UserCredentials | null = null;
 
 interface UserCredentials {
   memberId: number;
@@ -44,59 +38,36 @@ interface UserCredentials {
   email: string;
 }
 
-function encryptCredentials(creds: UserCredentials): string {
-  const key = getEncryptionKey();
-  const iv = randomBytes(16);
-  const cipher = createCipheriv("aes-256-cbc", key, iv);
-  const json = JSON.stringify(creds);
-  const encrypted = Buffer.concat([cipher.update(json, "utf-8"), cipher.final()]);
-  return Buffer.concat([iv, encrypted]).toString("base64url");
-}
+// --- XBloom authentication ---
+// Logs in once at startup using environment variables and caches credentials in memory.
+// Set XBLOOM_EMAIL and XBLOOM_PASSWORD in your .env file.
 
-function decryptCredentials(blob: string): UserCredentials | null {
-  try {
-    const key = getEncryptionKey();
-    const combined = Buffer.from(blob, "base64url");
-    if (combined.length < 17) return null;
-    const iv = combined.subarray(0, 16);
-    const encrypted = combined.subarray(16);
-    const decipher = createDecipheriv("aes-256-cbc", key, iv);
-    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
-    return JSON.parse(decrypted.toString("utf-8"));
-  } catch {
-    return null;
+async function initCredentials(): Promise<void> {
+  if (cachedCredentials) return;
+  if (!XBLOOM_EMAIL || !XBLOOM_PASSWORD) {
+    console.error("XBLOOM_EMAIL and XBLOOM_PASSWORD environment variables are required");
+    return;
   }
-}
-
-// --- DB storage (encrypted, RLS-protected) ---
-
-async function storeSession(accessToken: string, creds: UserCredentials): Promise<void> {
-  const encrypted = encryptCredentials(creds);
-  await fetch(`${SUPABASE_URL}/rest/v1/user_sessions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": SUPABASE_SERVICE_KEY,
-      "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-      "Prefer": "resolution=merge-duplicates",
-    },
-    body: JSON.stringify({ access_token: accessToken, encrypted_creds: encrypted }),
+  const resp = await postPlain("tMemberLogin.thtml", {
+    interfaceVersion: 20240918,
+    skey: "testskey",
+    clientType: 2,
+    phoneType: "Android",
+    languageType: 1,
+    email: XBLOOM_EMAIL,
+    password: XBLOOM_PASSWORD,
   });
-}
-
-async function getSession(accessToken: string): Promise<UserCredentials | null> {
-  const resp = await fetch(
-    `${SUPABASE_URL}/rest/v1/user_sessions?access_token=eq.${encodeURIComponent(accessToken)}&select=encrypted_creds`,
-    {
-      headers: {
-        "apikey": SUPABASE_SERVICE_KEY,
-        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    },
-  );
-  const rows = await resp.json();
-  if (!Array.isArray(rows) || rows.length === 0) return null;
-  return decryptCredentials(rows[0].encrypted_creds);
+  if (resp.result === "success") {
+    const member = resp.member as Record<string, unknown>;
+    cachedCredentials = {
+      memberId: member.tableId as number,
+      token: resp.token as string,
+      email: XBLOOM_EMAIL,
+    };
+    console.log("XBloom login successful");
+  } else {
+    console.error("XBloom login failed — check XBLOOM_EMAIL and XBLOOM_PASSWORD");
+  }
 }
 
 // --- RSA Encryption (hutool-style chunking) ---
@@ -168,19 +139,6 @@ function authBase(creds: UserCredentials): Record<string, unknown> {
 // --- Tool definitions ---
 
 const TOOLS = [
-  {
-    name: "xbloom_login",
-    description:
-      "Log in to your XBloom account. Required once before using other tools. Your password is used to authenticate and is never stored.",
-    inputSchema: {
-      type: "object" as const,
-      properties: {
-        email: { type: "string", description: "XBloom account email" },
-        password: { type: "string", description: "XBloom account password" },
-      },
-      required: ["email", "password"],
-    },
-  },
   {
     name: "xbloom_list_recipes",
     description: "List all recipes on your XBloom account. Returns recipe IDs needed for edit/delete.",
@@ -327,31 +285,6 @@ function buildPourList(pours: Pour[]) {
     isEnableVibrationBefore: p.agitate_before ? 1 : 2,
     isEnableVibrationAfter: p.agitate_after ? 1 : 2,
   }));
-}
-
-async function loginXbloom(args: Record<string, unknown>, accessToken: string): Promise<string> {
-  const resp = await postPlain("tMemberLogin.thtml", {
-    interfaceVersion: 20240918,
-    skey: "testskey",
-    clientType: 2,
-    phoneType: "Android",
-    languageType: 1,
-    email: args.email as string,
-    password: args.password as string,
-  });
-
-  if (resp.result === "success") {
-    const member = resp.member as Record<string, unknown>;
-    const creds: UserCredentials = {
-      memberId: member.tableId as number,
-      token: resp.token as string,
-      email: args.email as string,
-    };
-    await storeSession(accessToken, creds);
-    return `Logged in successfully. Your recipes are now accessible.`;
-  }
-
-  return `Login failed. Please check your email and password.`;
 }
 
 async function listRecipes(creds: UserCredentials): Promise<string> {
@@ -537,7 +470,7 @@ async function fetchRecipe(args: Record<string, unknown>): Promise<string> {
 
 // --- Tool dispatch ---
 
-async function handleToolCall(params: Record<string, unknown>, accessToken: string) {
+async function handleToolCall(params: Record<string, unknown>) {
   const name = params.name as string;
   const args = (params.arguments as Record<string, unknown>) || {};
 
@@ -547,33 +480,25 @@ async function handleToolCall(params: Record<string, unknown>, accessToken: stri
       return { content: [{ type: "text", text: await fetchRecipe(args) }] };
     }
 
-    // All other tools require a valid bearer token
-    if (!accessToken) {
-      return {
-        content: [{ type: "text", text: "Authentication required. Please reconnect the integration." }],
-        isError: true,
-      };
+    // All other tools require cached credentials
+    if (!cachedCredentials) {
+      await initCredentials();
     }
 
-    if (name === "xbloom_login") {
-      return { content: [{ type: "text", text: await loginXbloom(args, accessToken) }] };
-    }
-
-    const creds = await getSession(accessToken);
-    if (!creds) {
+    if (!cachedCredentials) {
       return {
-        content: [{ type: "text", text: "You need to log in first. Use xbloom_login with your XBloom email and password." }],
+        content: [{ type: "text", text: "XBloom login failed. Check XBLOOM_EMAIL and XBLOOM_PASSWORD environment variables." }],
         isError: true,
       };
     }
 
     let result: string;
     switch (name) {
-      case "xbloom_list_recipes": result = await listRecipes(creds); break;
-      case "xbloom_create_recipe": result = await createRecipe(args, creds); break;
-      case "xbloom_create_tea_recipe": result = await createTeaRecipe(args, creds); break;
-      case "xbloom_edit_recipe": result = await editRecipe(args, creds); break;
-      case "xbloom_delete_recipe": result = await deleteRecipe(args, creds); break;
+      case "xbloom_list_recipes": result = await listRecipes(cachedCredentials); break;
+      case "xbloom_create_recipe": result = await createRecipe(args, cachedCredentials); break;
+      case "xbloom_create_tea_recipe": result = await createTeaRecipe(args, cachedCredentials); break;
+      case "xbloom_edit_recipe": result = await editRecipe(args, cachedCredentials); break;
+      case "xbloom_delete_recipe": result = await deleteRecipe(args, cachedCredentials); break;
       default: return { content: [{ type: "text", text: `Unknown tool: ${name}` }], isError: true };
     }
     return { content: [{ type: "text", text: result }] };
@@ -596,7 +521,7 @@ function jsonRpcErr(id: unknown, code: number, message: string) {
   });
 }
 
-// --- OAuth 2.0 (auto-approve, unique tokens per user) ---
+// --- Session ID generation ---
 
 function generateToken(): string {
   const arr = new Uint8Array(32);
@@ -604,67 +529,10 @@ function generateToken(): string {
   return Array.from(arr, b => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function handleAuthorize(url: URL): Promise<Response> {
-  const redirectUri = url.searchParams.get("redirect_uri");
-  const state = url.searchParams.get("state");
-  if (!redirectUri) return new Response("Missing redirect_uri", { status: 400 });
-
-  const code = generateToken();
-  const redirect = new URL(redirectUri);
-  redirect.searchParams.set("code", code);
-  if (state) redirect.searchParams.set("state", state);
-  return Response.redirect(redirect.toString(), 302);
-}
-
-async function handleToken(req: Request): Promise<Response> {
-  const contentType = req.headers.get("content-type") || "";
-  let params: URLSearchParams;
-  if (contentType.includes("application/json")) {
-    params = new URLSearchParams(await req.json() as Record<string, string>);
-  } else {
-    params = new URLSearchParams(await req.text());
-  }
-
-  const grantType = params.get("grant_type");
-
-  if (grantType === "authorization_code") {
-    const accessToken = generateToken();
-    const refreshToken = generateToken();
-    return new Response(JSON.stringify({
-      access_token: accessToken,
-      token_type: "bearer",
-      expires_in: 31536000,
-      refresh_token: refreshToken,
-    }), { headers: { "Content-Type": "application/json" } });
-  }
-
-  if (grantType === "refresh_token") {
-    const oldRefreshToken = params.get("refresh_token") || "";
-    const newAccessToken = generateToken();
-    const newRefreshToken = generateToken();
-
-    // Migrate session from old token to new token
-    const oldCreds = await getSession(oldRefreshToken);
-    if (oldCreds) {
-      await storeSession(newAccessToken, oldCreds);
-    }
-
-    return new Response(JSON.stringify({
-      access_token: newAccessToken,
-      token_type: "bearer",
-      expires_in: 31536000,
-      refresh_token: newRefreshToken,
-    }), { headers: { "Content-Type": "application/json" } });
-  }
-
-  return new Response(JSON.stringify({ error: "unsupported_grant_type" }), {
-    status: 400, headers: { "Content-Type": "application/json" },
-  });
-}
 
 // --- Main handler ---
 
-const BASE_URL = "https://ramaokxdyszcqpqxmosv.supabase.co/functions/v1/xbloom-mcp";
+const BASE_URL = Deno.env.get("MCP_BASE_URL") || "http://localhost:8000";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -678,13 +546,6 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
-function getSessionKey(req: Request): string {
-  // Prefer bearer token (OAuth), fall back to Mcp-Session-Id (authless)
-  const auth = req.headers.get("authorization") || "";
-  if (auth.startsWith("Bearer ")) return auth.slice(7);
-  return req.headers.get("mcp-session-id") || "";
-}
-
 // --- SSE transport ---
 // Claude Desktop uses SSE: client GETs /sse to open a stream,
 // server sends an "endpoint" event with a POST URL,
@@ -692,9 +553,9 @@ function getSessionKey(req: Request): string {
 // server sends responses as SSE "message" events on the stream.
 
 // Per-session message queues for SSE transport
-const sseSessions = new Map<string, { controller: ReadableStreamDefaultController; accessToken: string }>();
+const sseSessions = new Map<string, { controller: ReadableStreamDefaultController }>();
 
-async function handleMcpMessage(body: Record<string, unknown>, accessToken: string): Promise<Record<string, unknown> | null> {
+async function handleMcpMessage(body: Record<string, unknown>): Promise<Record<string, unknown> | null> {
   const method = body.method as string;
   const id = body.id;
   const params = (body.params as Record<string, unknown>) || {};
@@ -711,11 +572,13 @@ async function handleMcpMessage(body: Record<string, unknown>, accessToken: stri
     case "tools/list":
       return { jsonrpc: "2.0", id, result: { tools: TOOLS } };
     case "tools/call":
-      return { jsonrpc: "2.0", id, result: await handleToolCall(params, accessToken || "") };
+      return { jsonrpc: "2.0", id, result: await handleToolCall(params) };  
     default:
       return { jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${method}` } };
   }
 }
+
+await initCredentials();
 
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
@@ -730,50 +593,15 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: CORS_HEADERS });
   }
 
-  // OAuth discovery
-  if (req.method === "GET" && (path.endsWith("/.well-known/oauth-protected-resource") || path.includes("oauth-protected-resource"))) {
-    return jsonResponse({ resource: BASE_URL, authorization_servers: [BASE_URL], bearer_methods_supported: ["header"] });
-  }
-  if (req.method === "GET" && (path.endsWith("/.well-known/oauth-authorization-server") || path.includes("oauth-authorization-server"))) {
-    return jsonResponse({
-      issuer: BASE_URL,
-      authorization_endpoint: `${BASE_URL}/authorize`,
-      token_endpoint: `${BASE_URL}/token`,
-      registration_endpoint: `${BASE_URL}/register`,
-      response_types_supported: ["code"],
-      grant_types_supported: ["authorization_code", "refresh_token"],
-      token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
-      code_challenge_methods_supported: ["S256", "plain"],
-    });
-  }
-
-  // OAuth endpoints
-  if (req.method === "GET" && path.endsWith("/authorize")) return handleAuthorize(url);
-  if (req.method === "POST" && path.endsWith("/token")) return handleToken(req);
-  if (req.method === "POST" && path.endsWith("/register")) {
-    let body: Record<string, unknown> = {};
-    try { body = await req.json(); } catch { /* ok */ }
-    return jsonResponse({
-      client_id: generateToken(),
-      client_secret: generateToken(),
-      client_name: body.client_name || "Claude",
-      redirect_uris: body.redirect_uris || [],
-      grant_types: ["authorization_code", "refresh_token"],
-      response_types: ["code"],
-      token_endpoint_auth_method: "client_secret_post",
-    });
-  }
-
   // --- SSE transport ---
   // GET /sse — open SSE stream, send endpoint URL
   if (req.method === "GET" && path.endsWith("/sse")) {
-    const accessToken = getSessionKey(req) || "";
     const sessionId = generateToken();
 
     const stream = new ReadableStream({
       start(controller) {
         // Store session
-        sseSessions.set(sessionId, { controller, accessToken });
+        sseSessions.set(sessionId, { controller });
 
         // Send endpoint event — tells client where to POST messages
         const endpointUrl = `${BASE_URL}/message?sessionId=${sessionId}`;
@@ -812,7 +640,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const response = await handleMcpMessage(body, session.accessToken);
+    const response = await handleMcpMessage(body);
 
     if (response) {
       // Send response as SSE event on the stream
@@ -836,7 +664,7 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   // MCP JSON-RPC over POST
-  let sessionKey = getSessionKey(req);
+  let sessionKey = req.headers.get("mcp-session-id") || "";
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return jsonRpcErr(null, -32700, "Parse error"); }
@@ -847,7 +675,7 @@ Deno.serve(async (req: Request) => {
     sessionKey = generateToken();
   }
 
-  const response = await handleMcpMessage(body, sessionKey);
+  const response = await handleMcpMessage(body);
   if (!response) return new Response(null, { status: 204, headers: CORS_HEADERS });
 
   const headers: Record<string, string> = { "Content-Type": "application/json", ...CORS_HEADERS };
