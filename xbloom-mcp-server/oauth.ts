@@ -82,6 +82,8 @@ export function handleRegister(body: Record<string, unknown>): Response {
     client_id: generateToken(),
     client_secret: generateToken(),
     client_name: body.client_name || "Claude",
+    client_id_issued_at: Math.floor(Date.now() / 1000),
+    client_secret_expires_at: 0,
     redirect_uris: body.redirect_uris || [],
     grant_types: ["authorization_code", "refresh_token"],
     response_types: ["code"],
