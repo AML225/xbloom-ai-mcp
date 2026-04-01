@@ -683,6 +683,19 @@ Deno.serve(async (req: Request) => {
   if (req.method === "GET") return jsonResponse({ name: "xbloom-mcp", status: "ok" });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
+  // Require bearer token for all MCP requests
+  const auth = req.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: {
+        ...CORS_HEADERS,
+        "WWW-Authenticate": `Bearer realm="${BASE_URL}"`,
+        "Content-Type": "application/json",
+      },
+    });
+  }
+  
   // MCP JSON-RPC over POST
   let sessionKey = req.headers.get("mcp-session-id") || "";
 
