@@ -589,6 +589,11 @@ Deno.serve(async (req: Request) => {
   console.log(`${req.method} ${path} auth=${authHeader.slice(0, 20)}`);
   console.log(`${req.method} ${path} ${req.headers.get("content-type") || ""}`);
 
+  if (req.method === "POST" && path === "/") {
+    const body = await req.clone().text();
+    console.log(`POST / body: ${body.slice(0, 200)}`);
+  }
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
   }
