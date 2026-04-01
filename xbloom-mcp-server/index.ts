@@ -563,8 +563,9 @@ async function handleMcpMessage(body: Record<string, unknown>): Promise<Record<s
 
   switch (method) {
     case "initialize":
+      console.log(`initialize response: protocolVersion=2025-11-25`);
       return { jsonrpc: "2.0", id, result: {
-        protocolVersion: "2024-11-05",
+        protocolVersion: "2025-11-25",
         capabilities: { tools: {} },
         serverInfo: { name: "xbloom", version: "2.0.0" },
       }};
@@ -689,19 +690,6 @@ Deno.serve(async (req: Request) => {
   // Health
   if (req.method === "GET") return jsonResponse({ name: "xbloom-mcp", status: "ok" });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-
-  // Require bearer token for all MCP requests
-  const auth = req.headers.get("authorization") || "";
-  if (!auth.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "unauthorized" }), {
-      status: 401,
-      headers: {
-        ...CORS_HEADERS,
-        "WWW-Authenticate": `Bearer realm="${BASE_URL}"`,
-        "Content-Type": "application/json",
-      },
-    });
-  }
   
   // MCP JSON-RPC over POST
   let sessionKey = req.headers.get("mcp-session-id") || "";
