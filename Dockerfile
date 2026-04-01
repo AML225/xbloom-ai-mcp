@@ -4,8 +4,7 @@ FROM denoland/deno:2.3.3
 WORKDIR /app
 
 # Copy source
-COPY xbloom-mcp-server/index.ts .
-COPY xbloom-mcp-server/oauth.ts .
+COPY xbloom-mcp-server/ .
 
 # Pre-cache dependencies
 RUN deno cache index.ts
