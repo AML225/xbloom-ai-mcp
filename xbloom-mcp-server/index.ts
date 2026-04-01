@@ -710,5 +710,7 @@ Deno.serve(async (req: Request) => {
   if (method === "initialize" && sessionKey) {
     headers["Mcp-Session-Id"] = sessionKey;
   }
+
+  console.log(`Response headers: ${JSON.stringify(headers)}`);
   return new Response(JSON.stringify(response), { headers });
 });
