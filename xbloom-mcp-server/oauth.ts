@@ -52,20 +52,29 @@ export async function handleToken(req: Request): Promise<Response> {
     params = new URLSearchParams(await req.text());
   }
 
+  console.log(`Token request grant_type: ${params.get("grant_type")}`);
+  console.log(`Token request client_id: ${params.get("client_id")}`);
+
   const accessToken = generateToken();
   const refreshToken = generateToken();
 
-  return new Response(JSON.stringify({
+  const responseBody = JSON.stringify({
     access_token: accessToken,
     token_type: "bearer",
     expires_in: 31536000,
     refresh_token: refreshToken,
-  }), { headers: { 
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  }});
+  });
+
+  console.log(`Token response: ${responseBody}`);
+
+  return new Response(responseBody, {
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
 }
 
 export function handleRegister(body: Record<string, unknown>): Response {
@@ -77,10 +86,12 @@ export function handleRegister(body: Record<string, unknown>): Response {
     grant_types: ["authorization_code", "refresh_token"],
     response_types: ["code"],
     token_endpoint_auth_method: "client_secret_post",
-  }), { headers: { 
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  }});
+  }), {
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
 }
