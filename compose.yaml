@@ -1,9 +1,8 @@
 services:
   xbloom-mcp:
     build: .
+    container_name: xbloom-mcp
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     environment:
       - XBLOOM_EMAIL=${XBLOOM_EMAIL}
       - XBLOOM_PASSWORD=${XBLOOM_PASSWORD}
