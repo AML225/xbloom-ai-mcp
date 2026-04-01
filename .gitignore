@@ -2,5 +2,6 @@
 .claude/
 .env
 .env.*
+!.env.example
 **/.temp/
 .vscode/
