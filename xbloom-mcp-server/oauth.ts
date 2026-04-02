@@ -60,27 +60,32 @@ export async function handleToken(req: Request): Promise<Response> {
     params = new URLSearchParams(await req.text());
   }
 
-  console.log(`Token request grant_type: ${params.get("grant_type")}`);
-  console.log(`Token request client_id: ${params.get("client_id")}`);
+  const grantType = params.get("grant_type");
+  const mcpToken = Deno.env.get("MCP_AUTH_TOKEN") || "";
 
-  const accessToken = generateToken();
-  const refreshToken = generateToken();
+  console.log(`Token request grant_type: ${grantType}`);
 
-  const responseBody = JSON.stringify({
-    access_token: accessToken,
-    token_type: "bearer",
-    expires_in: 31536000,
-    refresh_token: refreshToken,
-  });
+  if (grantType === "authorization_code" || grantType === "refresh_token") {
+    return new Response(JSON.stringify({
+      access_token: mcpToken,
+      token_type: "Bearer",
+      expires_in: 31536000,
+      refresh_token: mcpToken,
+    }), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
+  }
 
-  console.log(`Token response: ${responseBody}`);
-
-  return new Response(responseBody, {
+  return new Response(JSON.stringify({ error: "unsupported_grant_type" }), {
+    status: 400,
     headers: {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
 }

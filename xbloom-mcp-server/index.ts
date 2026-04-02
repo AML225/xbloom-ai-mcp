@@ -30,6 +30,7 @@ const API_HEADERS: Record<string, string> = {
 
 const XBLOOM_EMAIL = Deno.env.get("XBLOOM_EMAIL") || "";
 const XBLOOM_PASSWORD = Deno.env.get("XBLOOM_PASSWORD") || "";
+const MCP_AUTH_TOKEN = Deno.env.get("MCP_AUTH_TOKEN") || "";
 
 let cachedCredentials: UserCredentials | null = null;
 
@@ -697,7 +698,7 @@ Deno.serve(async (req: Request) => {
   
   // Require bearer token for MCP requests
   const auth = req.headers.get("authorization") || "";
-  if (!auth.startsWith("Bearer ")) {
+  if (!auth.startsWith("Bearer ") || auth.slice(7) !== MCP_AUTH_TOKEN) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
       headers: {
