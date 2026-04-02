@@ -563,9 +563,9 @@ async function handleMcpMessage(body: Record<string, unknown>): Promise<Record<s
 
   switch (method) {
     case "initialize":
-      console.log(`initialize response: protocolVersion=2025-11-25`);
+      console.log(`initialize response: protocolVersion=2024-11-05`);
       return { jsonrpc: "2.0", id, result: {
-        protocolVersion: "2025-11-25",
+        protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
         serverInfo: { name: "xbloom", version: "2.0.0" },
       }};
