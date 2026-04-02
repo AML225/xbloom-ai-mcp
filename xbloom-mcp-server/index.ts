@@ -697,7 +697,27 @@ Deno.serve(async (req: Request) => {
   // --- Streamable HTTP transport (POST to root) ---
 
   // Health
-  if (req.method === "GET") return jsonResponse({ name: "xbloom-mcp", status: "ok" });
+  if (req.method === "GET") {
+    const accept = req.headers.get("accept") || "";
+    if (accept.includes("text/event-stream")) {
+      // MCP Streamable HTTP transport - open SSE stream
+      const stream = new ReadableStream({
+        start(controller) {
+          // Keep stream open - Claude will send tool calls via POST
+        },
+        cancel() {},
+      });
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+          ...CORS_HEADERS,
+        },
+      });
+    }
+    return jsonResponse({ name: "xbloom-mcp", status: "ok" });
+  }
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   
   // Require bearer token for MCP requests
