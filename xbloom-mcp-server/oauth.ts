@@ -3,6 +3,9 @@
 // No database or session storage needed — credentials are handled via env vars
 
 const BASE_URL = Deno.env.get("MCP_BASE_URL") || "http://localhost:8000";
+const OAUTH_CLIENT_ID = Deno.env.get("OAUTH_CLIENT_ID") || "xbloom-mcp-client";
+const OAUTH_CLIENT_SECRET = Deno.env.get("OAUTH_CLIENT_SECRET") || "xbloom-mcp-secret";
+
 
 function generateToken(): string {
   const arr = new Uint8Array(32);
@@ -34,7 +37,12 @@ export function oauthDiscoveryServer() {
 export function handleAuthorize(url: URL): Response {
   const redirectUri = url.searchParams.get("redirect_uri");
   const state = url.searchParams.get("state");
+  const clientId = url.searchParams.get("client_id");
+
   if (!redirectUri) return new Response("Missing redirect_uri", { status: 400 });
+  if (clientId && clientId !== OAUTH_CLIENT_ID) {
+    return new Response("Invalid client_id", { status: 403 });
+  }
 
   const code = generateToken();
   const redirect = new URL(redirectUri);
@@ -79,8 +87,8 @@ export async function handleToken(req: Request): Promise<Response> {
 
 export function handleRegister(body: Record<string, unknown>): Response {
   return new Response(JSON.stringify({
-    client_id: generateToken(),
-    client_secret: generateToken(),
+    client_id: OAUTH_CLIENT_ID,
+    client_secret: OAUTH_CLIENT_SECRET,
     client_name: body.client_name || "Claude",
     client_id_issued_at: Math.floor(Date.now() / 1000),
     client_secret_expires_at: 0,

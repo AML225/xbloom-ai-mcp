@@ -7,5 +7,7 @@ services:
       - XBLOOM_EMAIL=${XBLOOM_EMAIL}
       - XBLOOM_PASSWORD=${XBLOOM_PASSWORD}
       - MCP_BASE_URL=${MCP_BASE_URL}
+      - OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID}
+      - OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET}
     env_file:
       - .env
