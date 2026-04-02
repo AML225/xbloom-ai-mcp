@@ -62,6 +62,7 @@ export async function handleToken(req: Request): Promise<Response> {
 
   const grantType = params.get("grant_type");
   const mcpToken = Deno.env.get("MCP_AUTH_TOKEN") || "";
+  console.log(`MCP_AUTH_TOKEN length: ${mcpToken.length}`);
 
   console.log(`Token request grant_type: ${grantType}`);
 
