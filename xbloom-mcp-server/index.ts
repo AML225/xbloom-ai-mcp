@@ -722,6 +722,7 @@ Deno.serve(async (req: Request) => {
   
   // Require bearer token for MCP requests
   const auth = req.headers.get("authorization") || "";
+  console.log(`Auth check: token=${auth.slice(7, 15)}... expected=${MCP_AUTH_TOKEN.slice(0, 8)}...`);
   if (!auth.startsWith("Bearer ") || auth.slice(7) !== MCP_AUTH_TOKEN) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
