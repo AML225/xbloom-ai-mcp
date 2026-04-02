@@ -622,7 +622,11 @@ Deno.serve(async (req: Request) => {
   if (req.method === "POST" && path.endsWith("/token")) return handleToken(req);
   if (req.method === "POST" && path.endsWith("/register")) {
     let body: Record<string, unknown> = {};
-    try { body = await req.json(); } catch { /* ok */ }
+    try { 
+      const rawBody = await req.text();
+      console.log(`Register body: ${rawBody}`);
+      body = JSON.parse(rawBody); 
+    } catch { /* ok */ }
     return handleRegister(body);
   }
 
