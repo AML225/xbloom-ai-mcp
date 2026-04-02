@@ -66,19 +66,29 @@ export async function handleToken(req: Request): Promise<Response> {
 
   console.log(`Token request grant_type: ${grantType}`);
 
-  if (grantType === "authorization_code" || grantType === "refresh_token") {
-    return new Response(JSON.stringify({
-      access_token: mcpToken,
-      token_type: "Bearer",
-      expires_in: 31536000,
-      refresh_token: mcpToken,
-    }), {
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
+  try {
+    if (grantType === "authorization_code" || grantType === "refresh_token") {
+      const responseBody = JSON.stringify({
+        access_token: mcpToken,
+        token_type: "Bearer",
+        expires_in: 31536000,
+        refresh_token: mcpToken,
+      });
+      console.log(`Token response: ${responseBody}`);
+      return new Response(responseBody, {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      });
+    }
+  } catch (e) {
+    console.error(`Token handler error: ${String(e)}`);
+    return new Response(JSON.stringify({ error: "internal_error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
     });
   }
 
