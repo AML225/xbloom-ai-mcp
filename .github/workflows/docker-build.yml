@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -27,4 +29,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/aml225/xbloom-ai-mcp:latest
+          tags: |
+            ghcr.io/aml225/xbloom-ai-mcp:latest
+            ghcr.io/aml225/xbloom-ai-mcp:${{ github.ref_name }}
