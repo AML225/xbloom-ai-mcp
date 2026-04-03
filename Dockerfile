@@ -5,6 +5,7 @@ WORKDIR /app
 
 # Copy source
 COPY xbloom-mcp-server/ .
+COPY brewing-references/ ./resources/
 
 # Pre-cache dependencies
 RUN deno cache index.ts

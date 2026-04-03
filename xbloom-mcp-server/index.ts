@@ -26,6 +26,18 @@ const API_HEADERS: Record<string, string> = {
   "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
 };
 
+// --- Resource files ---
+let brewingReference = "";
+let customInstructions = "";
+
+try {
+  brewingReference = await Deno.readTextFile("./resources/xbloom-brewing-reference.md");
+  customInstructions = await Deno.readTextFile("./resources/custom-instructions.md");
+  console.log("Resource files loaded successfully");
+} catch (e) {
+  console.error(`Failed to load resource files: ${String(e)}`);
+}
+
 // --- Environment variables ---
 
 const XBLOOM_EMAIL = Deno.env.get("XBLOOM_EMAIL") || "";
@@ -566,7 +578,7 @@ async function handleMcpMessage(body: Record<string, unknown>): Promise<Record<s
     case "initialize":
       return { jsonrpc: "2.0", id, result: {
         protocolVersion: "2024-11-05",
-        capabilities: { tools: {} },
+        capabilities: { tools: {}, resources: {} },
         serverInfo: { name: "xbloom", version: "2.0.0" },
       }};
     case "notifications/initialized":
@@ -575,6 +587,31 @@ async function handleMcpMessage(body: Record<string, unknown>): Promise<Record<s
       return { jsonrpc: "2.0", id, result: { tools: TOOLS } };
     case "tools/call":
       return { jsonrpc: "2.0", id, result: await handleToolCall(params) };  
+    case "resources/list":
+      return { jsonrpc: "2.0", id, result: { resources: [
+        {
+          uri: "xbloom://resources/brewing-reference",
+          name: "xBloom Brewing Reference",
+          description: "Comprehensive brewing science reference for xBloom recipe creation",
+          mimeType: "text/markdown",
+        },
+        {
+          uri: "xbloom://resources/custom-instructions",
+          name: "xBloom Custom Instructions",
+          description: "Recipe manager instructions and parameter guidelines",
+          mimeType: "text/markdown",
+        },
+      ]}};
+    case "resources/read": {
+      const uri = (params.uri as string) || "";
+      if (uri === "xbloom://resources/brewing-reference") {
+        return { jsonrpc: "2.0", id, result: { contents: [{ uri, mimeType: "text/markdown", text: brewingReference }] }};
+      }
+      if (uri === "xbloom://resources/custom-instructions") {
+        return { jsonrpc: "2.0", id, result: { contents: [{ uri, mimeType: "text/markdown", text: customInstructions }] }};
+      }
+      return { jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown resource: ${uri}` }};
+    }
     default:
       return { jsonrpc: "2.0", id, error: { code: -32601, message: `Method not found: ${method}` } };
   }
