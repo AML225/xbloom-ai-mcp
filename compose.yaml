@@ -3,6 +3,8 @@ services:
     image: ghcr.io/aml225/xbloom-ai-mcp:latest
     container_name: xbloom-mcp
     restart: unless-stopped
+    volumes:
+      - /path/to/xbloom-data:/app/data:rw
     environment:
       - XBLOOM_EMAIL=${XBLOOM_EMAIL}
       - XBLOOM_PASSWORD=${XBLOOM_PASSWORD}

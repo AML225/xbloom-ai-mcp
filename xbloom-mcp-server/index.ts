@@ -29,6 +29,7 @@ const API_HEADERS: Record<string, string> = {
 // --- Resource files ---
 let brewingReference = "";
 let customInstructions = "";
+let userPreferences = "";
 
 try {
   brewingReference = await Deno.readTextFile("./resources/xbloom-brewing-reference.md");
@@ -36,6 +37,30 @@ try {
   console.log("Resource files loaded successfully");
 } catch (e) {
   console.error(`Failed to load resource files: ${String(e)}`);
+}
+
+// --- User preferences ---
+// Persistent file stored on Docker volume, survives container updates.
+// If not found, copy template from image as starting point.
+
+try {
+  await Deno.stat("/app/data/user-preferences.md");
+} catch {
+  try {
+    const template = await Deno.readTextFile("./resources/user-preferences-template.md");
+    await Deno.mkdir("/app/data", { recursive: true });
+    await Deno.writeTextFile("/app/data/user-preferences.md", template);
+    console.log("Created user preferences file from template");
+  } catch (e) {
+    console.error(`Failed to create user preferences file: ${String(e)}`);
+  }
+}
+
+try {
+  userPreferences = await Deno.readTextFile("/app/data/user-preferences.md");
+  console.log("User preferences loaded successfully");
+} catch (e) {
+  console.error(`Failed to load user preferences: ${String(e)}`);
 }
 
 // --- Environment variables ---
@@ -601,6 +626,12 @@ async function handleMcpMessage(body: Record<string, unknown>): Promise<Record<s
           description: "Recipe manager instructions and parameter guidelines",
           mimeType: "text/markdown",
         },
+        {
+          uri: "xbloom://resources/user-preferences",
+          name: "xBloom User Preferences",
+          description: "Persistent user preferences and bean history",
+          mimeType: "text/markdown",
+        },
       ]}};
     case "resources/read": {
       const uri = (params.uri as string) || "";
@@ -609,6 +640,9 @@ async function handleMcpMessage(body: Record<string, unknown>): Promise<Record<s
       }
       if (uri === "xbloom://resources/custom-instructions") {
         return { jsonrpc: "2.0", id, result: { contents: [{ uri, mimeType: "text/markdown", text: customInstructions }] }};
+      }
+      if (uri === "xbloom://resources/user-preferences") {
+        return { jsonrpc: "2.0", id, result: { contents: [{ uri, mimeType: "text/markdown", text: userPreferences }] }};
       }
       return { jsonrpc: "2.0", id, error: { code: -32602, message: `Unknown resource: ${uri}` }};
     }
