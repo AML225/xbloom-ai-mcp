@@ -1,6 +1,6 @@
 services:
   xbloom-mcp:
-    build: .
+    image: ghcr.io/aml225/xbloom-ai-mcp:latest
     container_name: xbloom-mcp
     restart: unless-stopped
     environment:
