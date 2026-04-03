@@ -3,9 +3,8 @@
 // No database or session storage needed — credentials are handled via env vars
 
 const BASE_URL = Deno.env.get("MCP_BASE_URL") || "http://localhost:8000";
-const OAUTH_CLIENT_ID = Deno.env.get("OAUTH_CLIENT_ID") || "xbloom-mcp-client";
-const OAUTH_CLIENT_SECRET = Deno.env.get("OAUTH_CLIENT_SECRET") || "xbloom-mcp-secret";
-
+const OAUTH_CLIENT_ID = "xbloom-mcp-client";
+const OAUTH_CLIENT_SECRET = "xbloom-mcp-secret";
 
 function generateToken(): string {
   const arr = new Uint8Array(32);
