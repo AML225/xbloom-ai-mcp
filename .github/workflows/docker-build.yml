@@ -25,3 +25,4 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/aml225/xbloom-ai-mcp:latest
+        
