@@ -296,6 +296,17 @@ const TOOLS = [
       required: ["share_url"],
     },
   },
+  {
+    name: "xbloom_update_preferences",
+    description: "Update the persistent user preferences file with new information about beans, preferences, tasting notes, or observations. Read the current content first, then write the full updated content back.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        content: { type: "string", description: "Full markdown content to write to the preferences file" },
+      },
+      required: ["content"],
+    },
+  },
 ];
 
 // --- Tool implementations ---
@@ -507,6 +518,17 @@ async function fetchRecipe(args: Record<string, unknown>): Promise<string> {
   return `Failed. Your session may have expired — try logging in again.`;
 }
 
+async function updatePreferences(args: Record<string, unknown>): Promise<string> {
+  try {
+    const content = args.content as string;
+    await Deno.writeTextFile("/app/data/user-preferences.md", content);
+    userPreferences = content;
+    return "User preferences updated successfully.";
+  } catch (e) {
+    return `Failed to update preferences: ${String(e)}`;
+  }
+}
+
 // --- Tool dispatch ---
 
 async function handleToolCall(params: Record<string, unknown>) {
@@ -517,6 +539,10 @@ async function handleToolCall(params: Record<string, unknown>) {
     // Fetch recipe doesn't require auth
     if (name === "xbloom_fetch_recipe") {
       return { content: [{ type: "text", text: await fetchRecipe(args) }] };
+    }
+    
+    if (name === "xbloom_update_preferences") {
+      return { content: [{ type: "text", text: await updatePreferences(args) }] };
     }
 
     // All other tools require cached credentials
