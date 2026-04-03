@@ -165,9 +165,9 @@ const TOOLS = [
       type: "object" as const,
       properties: {
         name: { type: "string", description: "Recipe name" },
-        dose_g: { type: "number", description: "Coffee dose in grams (1-31)" },
+        dose_g: { type: "number", description: "Coffee dose in grams (5-31, recommend max ~18g)" },
         ratio: { type: "number", description: "Water ratio (total = dose_g * ratio)" },
-        grind_size: { type: "number", description: "Grind size 40-120 (lower = finer)" },
+        grind_size: { type: "number", description: "Grind size 1-80 (lower = finer, recommend 30-80 for xBloom Studio)" },
         grind_rpm: { type: "number", description: "Grinder RPM 60-120" },
         pours: {
           type: "array",
@@ -176,7 +176,7 @@ const TOOLS = [
             type: "object",
             properties: {
               volume_ml: { type: "number" },
-              temperature_c: { type: "number" },
+              temperature_c: { type: "number", description: "Temperature in °C: 20 (RT/room temp), 40-95 (integer steps), 99 (BP/boiling)" },
               pattern: { type: "string", enum: ["centered", "circular", "spiral"] },
               flow_rate: { type: "number" },
               pause_seconds: { type: "integer" },
@@ -235,7 +235,7 @@ const TOOLS = [
             type: "object",
             properties: {
               volume_ml: { type: "number" },
-              temperature_c: { type: "number" },
+              temperature_c: { type: "number", description: "Temperature in °C: 20 (RT/room temp), 40-95 (integer steps), 99 (BP/boiling)" },
               pattern: { type: "string", enum: ["centered", "circular", "spiral"] },
               flow_rate: { type: "number" },
               pause_seconds: { type: "integer" },
