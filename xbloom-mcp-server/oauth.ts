@@ -62,34 +62,20 @@ export async function handleToken(req: Request): Promise<Response> {
 
   const grantType = params.get("grant_type");
   const mcpToken = Deno.env.get("MCP_AUTH_TOKEN") || "";
-  console.log(`MCP_AUTH_TOKEN length: ${mcpToken.length}`);
 
-  console.log(`Token request grant_type: ${grantType}`);
-  console.log(`Token request full body: ${JSON.stringify(Object.fromEntries(params))}`);
-
-  try {
-    if (grantType === "authorization_code" || grantType === "refresh_token") {
-      const responseBody = JSON.stringify({
-        access_token: mcpToken,
-        token_type: "Bearer",
-        expires_in: 31536000,
-        refresh_token: mcpToken,
-      });
-      console.log(`Token response: ${responseBody}`);
-      return new Response(responseBody, {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        },
-      });
-    }
-  } catch (e) {
-    console.error(`Token handler error: ${String(e)}`);
-    return new Response(JSON.stringify({ error: "internal_error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
+  if (grantType === "authorization_code" || grantType === "refresh_token") {
+    return new Response(JSON.stringify({
+      access_token: mcpToken,
+      token_type: "Bearer",
+      expires_in: 31536000,
+      refresh_token: mcpToken,
+    }), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
     });
   }
 

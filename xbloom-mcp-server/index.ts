@@ -564,7 +564,6 @@ async function handleMcpMessage(body: Record<string, unknown>): Promise<Record<s
 
   switch (method) {
     case "initialize":
-      console.log(`initialize response: protocolVersion=2024-11-05`);
       return { jsonrpc: "2.0", id, result: {
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
@@ -586,19 +585,6 @@ await initCredentials();
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   const path = url.pathname;
-
-  const allHeaders: Record<string, string> = {};
-  req.headers.forEach((value, key) => { allHeaders[key] = value; });
-  console.log(`${req.method} ${path} headers: ${JSON.stringify(allHeaders)}`);
-
-  const authHeader = req.headers.get("authorization") || "none";
-  console.log(`${req.method} ${path} auth=${authHeader.slice(0, 20)}`);
-  console.log(`${req.method} ${path} ${req.headers.get("content-type") || ""}`);
-
-  if (req.method === "POST" && path === "/") {
-    const body = await req.clone().text();
-    console.log(`POST / body: ${body.slice(0, 200)}`);
-  }
 
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: CORS_HEADERS });
@@ -623,9 +609,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "POST" && path.endsWith("/register")) {
     let body: Record<string, unknown> = {};
     try { 
-      const rawBody = await req.text();
-      console.log(`Register body: ${rawBody}`);
-      body = JSON.parse(rawBody); 
+      body = await req.json(); 
     } catch { /* ok */ }
     return handleRegister(body);
   }
@@ -722,7 +706,6 @@ Deno.serve(async (req: Request) => {
   
   // Require bearer token for MCP requests
   const auth = req.headers.get("authorization") || "";
-  console.log(`Auth check: token=${auth.slice(7, 15)}... expected=${MCP_AUTH_TOKEN.slice(0, 8)}...`);
   if (!auth.startsWith("Bearer ") || auth.slice(7) !== MCP_AUTH_TOKEN) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
@@ -754,6 +737,5 @@ Deno.serve(async (req: Request) => {
     headers["Mcp-Session-Id"] = sessionKey;
   }
 
-  console.log(`Response headers: ${JSON.stringify(headers)}`);
   return new Response(JSON.stringify(response), { headers });
 });
