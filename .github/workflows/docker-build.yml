@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,4 +28,3 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/aml225/xbloom-ai-mcp:latest
-        
