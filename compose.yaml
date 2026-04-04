@@ -4,7 +4,7 @@ services:
     container_name: xbloom-mcp
     restart: unless-stopped
     volumes:
-      - /path/to/xbloom-data:/app/data:rw
+      - /path/to/xbloom-data:/app/data:rw  # optional — remove if not using persistent preferences
     environment:
       - XBLOOM_EMAIL=${XBLOOM_EMAIL}
       - XBLOOM_PASSWORD=${XBLOOM_PASSWORD}
