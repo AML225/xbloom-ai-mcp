@@ -88,6 +88,7 @@ Only someone who knows the `OAUTH_CLIENT_SECRET` can successfully add the connec
 | `xbloom_delete_recipe` | Delete a recipe |
 | `xbloom_fetch_recipe` | Import a recipe from a share URL |
 | `xbloom_update_preferences` | Write to the persistent user preferences file |
+| `xbloom_read_resource` | Read server resource files (preferences, brewing reference, custom instructions) |
 
 ---
 
