@@ -10,7 +10,7 @@ An MCP (Model Context Protocol) server that connects Claude to your xBloom Studi
 ## Prerequisites
 
 - Docker and Docker Compose
-- A domain name with HTTPS (or a reverse proxy like Caddy)
+- A publicly accessible HTTPS endpoint (domain name with a reverse proxy, or a service like Cloudflare Tunnel)
 - An xBloom account
 - A Claude Pro, Max, Team, or Enterprise plan
 
