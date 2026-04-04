@@ -88,6 +88,17 @@ export async function handleToken(req: Request): Promise<Response> {
 }
 
 export function handleRegister(body: Record<string, unknown>): Response {
+  const registrationSecret = Deno.env.get("OAUTH_REGISTRATION_SECRET") || "";
+  if (registrationSecret && body.client_secret !== registrationSecret) {
+    return new Response(JSON.stringify({ error: "unauthorized" }), {
+      status: 401,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  }
+
   return new Response(JSON.stringify({
     client_id: OAUTH_CLIENT_ID,
     client_secret: OAUTH_CLIENT_SECRET,
