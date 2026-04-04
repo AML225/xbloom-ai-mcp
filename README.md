@@ -3,7 +3,7 @@
 > This is an unofficial, community-built MCP server. It is not affiliated with or endorsed by xBloom.
 > This project originated as a fork of [denull0/xbloom-agent](https://github.com/denull0/xbloom-agent) and has since been substantially rewritten.
 
-An MCP (Model Context Protocol) server that connects Claude to your xBloom Studio coffee machine. Create, edit, and manage pour-over coffee and tea recipes through conversation — recipes sync directly to the xBloom iOS app.
+An MCP (Model Context Protocol) server that connects Claude to your xBloom Studio coffee machine. Create, edit, and manage coffee and tea recipes through conversation and they sync directly to the xBloom iOS app.
 
 ---
 
@@ -20,12 +20,12 @@ An MCP (Model Context Protocol) server that connects Claude to your xBloom Studi
 
 ### 1. (Optional) Create a data directory
 
-A data directory is only required if you want persistent user preferences — a markdown file where Claude can store your brewing preferences, bean history, and tasting notes across container updates.
+A data directory is only required if you want persistent user preferences. This involves a markdown file where Claude can store your brewing preferences, bean history, and tasting notes across container updates. File will be created on first run and updated by Claude periodically. File can be updated by user at any time.
 ```bash
 mkdir -p /path/to/xbloom-data
 ```
 
-If you skip this step, the server will still work fully — you just won't have persistent preferences. If you add the volume mount later, the server will automatically create a preferences file from the template on first run.
+If you skip this step, the server will still work fully. It is only required to have persistent preferences. If you add the volume mount later, the server will automatically create a preferences file from the template on first run.
 
 ### 2. Create your compose file
 
@@ -51,14 +51,16 @@ docker compose up -d
 | `XBLOOM_EMAIL` | Yes | Your xBloom account email |
 | `XBLOOM_PASSWORD` | Yes | Your xBloom account password |
 | `MCP_BASE_URL` | Yes | Public HTTPS URL of your server (e.g. `https://coffee.yourdomain.com`) |
-| `MCP_AUTH_TOKEN` | Yes | Bearer token for MCP requests — generate with `openssl rand -hex 32` |
-| `OAUTH_CLIENT_SECRET` | Yes | Secret entered when adding the Claude connector — generate with `openssl rand -hex 32` |
+| `MCP_AUTH_TOKEN` | Yes | Bearer token for MCP requests** |
+| `OAUTH_CLIENT_SECRET` | Yes | Secret entered when adding the Claude connector** | 
+
+**generate with `openssl rand -hex 32` 
 
 ---
 
 ## Cloudflare
 
-If your domain is proxied through Cloudflare, you must allow Claude's user agent in your bot management rules. In your Cloudflare dashboard under Security, find the managed "Manage AI bots" rule and set `Claude-User` to **Allow**. Without this, Cloudflare will block all requests from Claude's infrastructure.
+If your domain is proxied through Cloudflare, you must allow Claude's user agent in your bot management rules. In your Cloudflare dashboard under Security, find the managed "Manage AI bots" rule or "AI Crawl Control" settings and set `Claude-User` to **Allow**. Without this, Cloudflare will block all requests from Claude's infrastructure.
 
 ---
 
