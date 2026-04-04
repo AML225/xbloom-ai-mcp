@@ -92,6 +92,14 @@ Only someone who knows the `OAUTH_CLIENT_SECRET` can successfully add the connec
 
 ---
 
+## Preferences Viewer
+
+Your user preferences file can be viewed in any browser at:
+```
+https://your-domain.com/preferences?token=YOUR_MCP_AUTH_TOKEN
+```
+---
+
 ## License
 
 MIT. See original project for prior copyright notices.
