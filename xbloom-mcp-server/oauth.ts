@@ -59,6 +59,16 @@ export async function handleToken(req: Request): Promise<Response> {
     params = new URLSearchParams(await req.text());
   }
 
+  const clientSecret = params.get("client_secret") || "";
+  const expectedSecret = Deno.env.get("OAUTH_CLIENT_SECRET") || "";
+
+  if (expectedSecret && clientSecret !== expectedSecret) {
+    return new Response(JSON.stringify({ error: "invalid_client" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const grantType = params.get("grant_type");
   const mcpToken = Deno.env.get("MCP_AUTH_TOKEN") || "";
 
