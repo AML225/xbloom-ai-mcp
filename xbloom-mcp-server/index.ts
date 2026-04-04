@@ -297,6 +297,21 @@ const TOOLS = [
     },
   },
   {
+    name: "xbloom_read_resource",
+    description: "Read a server resource file. Always call this before updating preferences to avoid data loss. Also useful for referencing brewing science or custom instructions on demand.",
+    inputSchema: {
+      type: "object" as const,
+      properties: {
+        resource: {
+          type: "string",
+          enum: ["user-preferences", "brewing-reference", "custom-instructions"],
+          description: "Which resource to read",
+        },
+      },
+      required: ["resource"],
+    },
+  },
+  {
     name: "xbloom_update_preferences",
     description: "Update the persistent user preferences file with new information about beans, preferences, tasting notes, or observations. Read the current content first, then write the full updated content back.",
     inputSchema: {
@@ -529,6 +544,24 @@ async function updatePreferences(args: Record<string, unknown>): Promise<string>
   }
 }
 
+async function readResource(args: Record<string, unknown>): Promise<string> {
+  const resource = args.resource as string;
+  switch (resource) {
+    case "user-preferences":
+      try {
+        return await Deno.readTextFile("/app/data/user-preferences.md");
+      } catch (e) {
+        return `Failed to read user preferences: ${String(e)}`;
+      }
+    case "brewing-reference":
+      return brewingReference || "Brewing reference not loaded.";
+    case "custom-instructions":
+      return customInstructions || "Custom instructions not loaded.";
+    default:
+      return `Unknown resource: ${resource}`;
+  }
+}
+
 // --- Tool dispatch ---
 
 async function handleToolCall(params: Record<string, unknown>) {
@@ -539,6 +572,10 @@ async function handleToolCall(params: Record<string, unknown>) {
     // Fetch recipe doesn't require auth
     if (name === "xbloom_fetch_recipe") {
       return { content: [{ type: "text", text: await fetchRecipe(args) }] };
+    }
+
+    if (name === "xbloom_read_resource") {
+      return { content: [{ type: "text", text: await readResource(args) }] };
     }
     
     if (name === "xbloom_update_preferences") {
