@@ -536,6 +536,10 @@ async function fetchRecipe(args: Record<string, unknown>): Promise<string> {
 async function updatePreferences(args: Record<string, unknown>): Promise<string> {
   try {
     const content = args.content as string;
+    // Backup existing file before overwriting
+    try {
+      await Deno.copyFile("/app/data/user-preferences.md", "/app/data/user-preferences.md.bak");
+    } catch { /* ok if backup fails — file may not exist yet */ }
     await Deno.writeTextFile("/app/data/user-preferences.md", content);
     userPreferences = content;
     return "User preferences updated successfully.";
@@ -748,6 +752,22 @@ Deno.serve(async (req: Request) => {
     return handleRegister(body);
   }
 
+  // Preferences viewer
+  if (req.method === "GET" && path.endsWith("/preferences")) {
+    const token = url.searchParams.get("token") || "";
+    if (token !== MCP_AUTH_TOKEN) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    try {
+      const prefs = await Deno.readTextFile("/app/data/user-preferences.md");
+      return new Response(prefs, {
+        headers: { "Content-Type": "text/plain; charset=utf-8", ...CORS_HEADERS },
+      });
+    } catch {
+      return new Response("Preferences file not found.", { status: 404 });
+    }
+  }
+  
   // --- SSE transport ---
   // GET /sse — open SSE stream, send endpoint URL
   if (req.method === "GET" && path.endsWith("/sse")) {

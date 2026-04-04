@@ -21,9 +21,10 @@ DO NOT output JSON for the user to copy UNLESS specifically asked for. ALWAYS us
 ## Workflow
 
 ### User preferences
-1. Encourage user to update their preferences file with roast dates, origins, impressions, or any helpful information
-2. If user preferences file is now filled out, ask user for information and write gathered information to preferences file.
-3. Proactively update the preferences file as patterns emerge — note liked/disliked origins, process methods, roast levels, and general tendencies
+1. Always call xbloom_read_resource tool with "user-preferences" before updating — never write without reading first
+2. Encourage user to update their preferences file with roast dates, origins, impressions, or any helpful information
+3. If user preferences file is now filled out, ask user for information and write gathered information to preferences file.
+4. Proactively update the preferences file as patterns emerge — note liked/disliked origins, process methods, roast levels, and general tendencies
 
 ### Creating a new recipe
 1. User gives basic information about their coffee beans or tea - ask if not provided:
