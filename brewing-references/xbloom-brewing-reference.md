@@ -609,15 +609,15 @@ Hedrick addresses the fines problem by using a **coarser grind combined with agg
 
 ---
 
-## 8. Grind Size Guide (XBloom 40-120 scale)
+## 8. Grind Size Guide (XBloom 1-80 scale)
 
 | Range | Description | Best For |
 |-------|-------------|----------|
-| 40-55 | Very fine | Not typical for pour-over (espresso-like). SEY ultra-high extraction method only. |
-| 55-70 | Fine-medium | Light roasts, dense beans, high extraction needed, washed process |
-| 70-85 | Medium | Most versatile, balanced extraction, medium roasts |
-| 85-100 | Medium-coarse | Dark roasts, naturally processed beans, Kasuya 4:6, osmotic flow |
-| 100-120 | Coarse | April brewer style, cold brew, very dark roasts |
+| 1-30 | Very fine | Not recommended for pour-over on xBloom Studio |
+| 30-45 | Fine-medium | Light roasts, dense beans, high extraction needed, washed process |
+| 45-60 | Medium | Most versatile, balanced extraction, medium roasts |
+| 60-70 | Medium-coarse | Dark roasts, naturally processed beans, Kasuya 4:6 |
+| 70-80 | Coarse | Very dark roasts, less agitation methods |
 
 ## 9. Temperature Guide
 

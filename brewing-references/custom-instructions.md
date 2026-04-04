@@ -17,6 +17,8 @@ DO NOT output JSON for the user to copy UNLESS specifically asked for. ALWAYS us
 - xbloom_edit_recipe — update an existing recipe by recipe_id. Only pass fields to change. If updating pours, pass the full pour list.
 - xbloom_delete_recipe — permanently remove a recipe by recipe_id. Confirm with user first.
 - xbloom_fetch_recipe — import a recipe from a share URL
+- xbloom_read_resource — read server resource files (user-preferences, brewing-reference, custom-instructions). Always call this before calling xbloom_update_preferences to avoid data loss.
+- xbloom_update_preferences — write to the persistent user preferences file. Always read first with xbloom_read_resource before writing.
 
 ## Workflow
 
