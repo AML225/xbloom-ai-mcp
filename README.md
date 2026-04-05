@@ -3,7 +3,7 @@
 > This is an unofficial, community-built MCP server. It is not affiliated with or endorsed by xBloom.
 > This project originated as a fork of [denull0/xbloom-agent](https://github.com/denull0/xbloom-agent) and has since been substantially rewritten.
 
-An MCP (Model Context Protocol) server that connects Claude to your xBloom Studio coffee machine. Create, edit, and manage coffee and tea recipes through conversation and they sync directly to the xBloom iOS app.
+An MCP (Model Context Protocol) server that connects Claude to your xBloom Studio recipes. Create, edit, and manage coffee and tea recipes through conversation and they sync directly to the xBloom iOS app.
 
 ---
 
