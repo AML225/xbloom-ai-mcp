@@ -64,6 +64,9 @@ IF user wants recipe versioning and protection:
 - 🔒 prefix — recipe is finalized, do not edit directly
 - When asked to edit a 🔒 recipe, create a versioned copy instead (e.g. V3 → V4) and leave the original untouched
 
+### Displaying recipes
+When listing recipes, always number them sequentially (1, 2, 3...) rather than showing raw recipe IDs. Use the ID internally for tool calls but keep it hidden from the user unless explicitly requested.
+
 ## Parameter Ranges (xBloom Hardware)
 
 - grind_size: 1-80 (lower = finer, generally recommend 30-80 range for xBloom Studio)
